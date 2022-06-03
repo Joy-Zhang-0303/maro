@@ -38,6 +38,8 @@ class SupplyChainBusinessEngine(AbsBusinessEngine):
 
         self._metrics_cache = None
 
+        self._tick = 0
+
     @property
     def frame(self) -> FrameBase:
         return self._frame
@@ -80,6 +82,8 @@ class SupplyChainBusinessEngine(AbsBusinessEngine):
 
         self._event_buffer.insert_event(decision_event)
 
+        self._tick = tick
+
     def post_step(self, tick: int) -> bool:
         # Call post_step functions by facility.
         for facility in self.world.facilities.values():
@@ -101,6 +105,8 @@ class SupplyChainBusinessEngine(AbsBusinessEngine):
         # Call reset functions by facility.
         for facility in self.world.facilities.values():
             facility.reset()
+
+        self._tick = 0
 
     def get_node_mapping(self) -> dict:
         return self._node_mapping
@@ -184,6 +190,11 @@ class SupplyChainBusinessEngine(AbsBusinessEngine):
             manufacture_unit.execute_manufacture(tick)
 
     def get_metrics(self) -> dict:
+        for consumer in self._consumer_dict.values():
+            consumer.clear_pending_order_daily()
+        for distribution in self._distribution_dict.values():
+            distribution.calc_pending_order_daily(self._tick)
+
         if self._metrics_cache is None:
             self._metrics_cache = {
                 "products": {

@@ -178,10 +178,6 @@ class DistributionUnit(UnitBase):
             payload=order.quantity,
         ))
 
-        dest_consumer = order.destination.products[order.sku_id].consumer
-        if vlt_info.vlt < len(dest_consumer.pending_order_daily):  # Check use (arrival tick - tick) or vlt
-            dest_consumer.pending_order_daily[vlt_info.vlt] += order.quantity
-
         return vlt_info.unit_transportation_cost * order.quantity
 
     def pre_step(self, tick: int) -> None:
@@ -248,6 +244,14 @@ class DistributionUnit(UnitBase):
             self.data_model.pending_order_number = self._pending_order_number
             self.data_model.pending_product_quantity = self._total_pending_quantity
             self._is_order_changed = False
+
+    def calc_pending_order_daily(self, tick: int) -> None:
+        for arrival_tick, payload_list in self._payload_on_the_way.items():
+            for payload in payload_list:
+                if 0 <= payload.arrival_tick - tick < self.world.configs.settings["pending_order_len"]:
+                    order = payload.order
+                    consumer = order.destination.products[order.sku_id].consumer
+                    consumer.pending_order_daily[payload.arrival_tick - tick] += order.quantity
 
     def reset(self) -> None:
         super(DistributionUnit, self).reset()

@@ -8,8 +8,6 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
-from scipy.ndimage.interpolation import shift
-
 from maro.simulator.scenarios.supply_chain.actions import ConsumerAction
 from maro.simulator.scenarios.supply_chain.datamodels import ConsumerDataModel
 from maro.simulator.scenarios.supply_chain.order import Order
@@ -91,7 +89,7 @@ class ConsumerUnit(ExtendUnitBase):
 
         self._unit_order_cost = self.facility.skus[self.sku_id].unit_order_cost
 
-        self.pending_order_daily = [0] * self.world.configs.settings["pending_order_len"]
+        self.clear_pending_order_daily()
 
         assert isinstance(self.data_model, ConsumerDataModel)
 
@@ -160,7 +158,7 @@ class ConsumerUnit(ExtendUnitBase):
             self.data_model.latest_consumptions = 0
 
     def step(self, tick: int) -> None:
-        self._update_pending_order()
+        pass
 
     def flush_states(self) -> None:
         if self._received > 0:
@@ -186,10 +184,10 @@ class ConsumerUnit(ExtendUnitBase):
         self._purchased = 0
         self._order_product_cost = 0
         self._order_base_cost = 0
-        self.pending_order_daily = [0] * self.world.configs.settings["pending_order_len"]
+        self.clear_pending_order_daily()
 
-    def _update_pending_order(self) -> None:
-        self.pending_order_daily = shift(self.pending_order_daily, -1, cval=0)
+    def clear_pending_order_daily(self) -> None:
+        self.pending_order_daily = [0] * self.world.configs.settings["pending_order_len"]
 
     def get_unit_info(self) -> ConsumerUnitInfo:
         return ConsumerUnitInfo(
